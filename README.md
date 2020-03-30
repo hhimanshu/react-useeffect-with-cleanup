@@ -1,68 +1,73 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Use of `useEffect` React Hook when cleanup is required.
 
-## Available Scripts
+In this codebase, there are 2 top-level components - `Quotes` and `Books`.
 
-In the project directory, you can run:
+When you click on any `button` the currently displayed component will unmount, causing `componentWillUnmount` lifecycle method to be called. This is the place where we perform the cleanups such as unsubscibing to events, closing files to avoid any memory leaks.
 
-### `yarn start`
+The few important points to know about the `useEffect` Hook are
+### Keep the dependency array empty when you want the effect to be applied once
+```js
+function FunctionComponent(props) {
+    useEffect(() => {
+    fetchFromApi() 
+    }, []) // <- Keep this array empty
+}
+```
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Consider fetching from API use case. You probably want to fetch the data once and let the user work with that data. You do not want to trigger the API call everytime a component is updated.
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+Keeping the second array empty `[]` (dependencies), you tell React, that I do not depend on any `state` or `props` change, so please do not run effect on `componentDidUpdate` lifecycle.
 
-### `yarn test`
+### Trigger effect everytime a `state` or `props` changes
+```js
+function FunctionComponent(props) {
+    const [quotes, setQuotes] = useState([]);
+    const {someValue} = props
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+    useEffect(() => {
+        fetchFromApi() 
+        }, [quotes, someValue]) // <- run effect when either quotes, or someValue changes
+}
+```
+In this example, if any of the values available in dependency array changes, the effect will run.
 
-### `yarn build`
+### Trigger a cleanup
+When using `useEffect`, if your use case needs to clean up the resources at the end, you should return a function that will be called during `componentWillUnmount` lifecycle.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```js
+function FunctionComponent(props) {
+    const [quotes, setQuotes] = useState([]);
+    const {someValue} = props
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+    useEffect(() => {
+        fetchFromApi() 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+        return () => {
+            console.log("I will start the cleanup")
+            doTheCleanUp()
+        }
+    }, [quotes, someValue]) // <- run effect when either quotes, or someValue changes
 
-### `yarn eject`
+}
+```
+In this example, if you go from `<Quotes/>` to `<Books/>` component, the `componentWillUnmount` will be triggered anf therefore React will call the function returned from the `useEffect`.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+Optionally, if you want to trigger a `cleanup` on change of a `state` or `props` change, add a new `useEffect` to do that
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+function FunctionComponent(props) {
+    const [quotes, setQuotes] = useState([]);
+    const {someValue} = props
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+    useEffect(() => {
+        fetchFromApi() 
+    }, [quotes, someValue]) // <- run effect when either quotes, or someValue changes
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+    useEffect(() => {
+        return () => {
+            console.log("I will do the cleanup when someValue changes")
+        }        
+    }, [someValue])
+}
+```
+Pay attention to the second `useEffect`, it only returns a function that will be triggered for cleanup.
