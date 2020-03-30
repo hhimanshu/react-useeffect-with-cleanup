@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 export default () => {
-  const [quotes, setQuotes] = useState([]);
   const [randomQuote, setRandomQuote] = useState("")
-  const [unsubscribe, setUnsubscribe] = useState(false)
+  const [quotes, setQuotes] = useState([]);
 
   useEffect(() => {
     fetch('https://api.quotable.io/quotes?limit=10')
@@ -13,8 +12,16 @@ export default () => {
         setQuotes(qs.results.map(q => q.content))
       })
 
-    return () => console.log("cleaning up")
+    return () => {
+      console.log("cleaning up")
+      setRandomQuote(undefined)
+      setQuotes(undefined)
+    }
   }, []);
+
+  useEffect(() => {
+    getRandomQuote()
+  }, [quotes])
 
   function getRandomQuote() {
     const index = Math.floor(Math.random() * Math.floor(quotes.length));
@@ -22,24 +29,17 @@ export default () => {
   }
 
   return (
-    <>
-      {!unsubscribe && <DisplayQuote quote={randomQuote}
-        onNext={getRandomQuote}
-        onUnsubscribe={() => setUnsubscribe(true)} />}
-      {unsubscribe && <UnSubscribe />}
-    </>
+    <DisplayQuote quote={randomQuote}
+      onNext={getRandomQuote}
+    />
   );
 };
 
-const DisplayQuote = ({ quote, onNext, onUnsubscribe }) => (
+const DisplayQuote = ({ quote, onNext }) => (
   <>
     <h1>Random Quote</h1>
     <p>{quote}</p>
     <button onClick={onNext}>Next</button>
-    <button onClick={onUnsubscribe}>UnSubscribe</button>
   </>
 )
 
-const UnSubscribe = () => (
-  <h5>You are now unsubscribed!</h5>
-)
