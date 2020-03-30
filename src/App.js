@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import Quotes from './Quotes';
 import Books from './Books';
@@ -9,9 +9,9 @@ function App() {
     <div className="App">
       <button onClick={() => setShowBooks(false)}>Quotes</button>
       <button onClick={() => setShowBooks(true)}>Books</button>
-      
-      {!showBooks && <Quotes/>}
-      {showBooks && <Books/>}
+
+      {!showBooks && <Quotes />}
+      {showBooks && <Books />}
     </div>
   );
 }
